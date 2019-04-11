@@ -11,7 +11,15 @@ import datetime
 import calendar
 import threading
 import subprocess as subp
+from urllib.parse import urlparse
+from time import sleep
 
+
+# download path
+download_dir = 'website/downloads'
+base_path = sys.path[0] + os.path.sep
+
+# define colors
 R = '\033[31m' # red
 G = '\033[32m' # green
 C = '\033[36m' # cyan
@@ -33,10 +41,13 @@ description='SpacePaper Provides High Quality Images from NASA APOD [ June 1995 
 parser.add_argument('-m', '--month', type=int, required=False, default = 7)
 parser.add_argument('-y', '--year', type=int, required=False, default = 1996)
 parser.add_argument('-r', '--random', required=False, action='store_true')
+parser.add_argument('-d', '--download', required=False, action='store_true')
 args = parser.parse_args()
 Month = args.month
 Year = args.year
 Random = args.random
+download = args.download
+
 
 def banner():
 	banner = r'''
@@ -48,11 +59,12 @@ def banner():
     /_/                               /_/'''
 	print (G + banner + W + '\n')
 	print (G + '[>]' + C + ' Created By : ' + W + 'thewhiteh4t')
+	print (G + '[>]' + C + ' Extended By : ' + W + 'subhead')
 	print (G + '[>]' + C + ' Version    : ' + W + version + '\n')
 
 def updater():
 	print (G + '[+]' + C + ' Checking For Updates...' + W, end='')
-	update = requests.get('https://raw.githubusercontent.com/thewhiteh4t/spacepaper/master/version.txt', timeout = 5)
+	update = requests.get('https://raw.githubusercontent.com/subhead/spacepaper/master/version.txt', timeout = 5)
 	update = update.text.split(' ')[1]
 	update = update.strip()
 
@@ -93,6 +105,7 @@ def core():
 	global Month, Year, Random, sv
 	print (G + '[+]' + C + ' Starting PHP Server...' + W)
 	print (G + '[+]' + C + ' URL : ' + W + 'http://127.0.0.1:8000/website')
+	print (G + '[+]' + C + ' Download enabled : ' + W + str(download))
 	with open ('php.log', 'w') as log:
 		sv = subp.Popen(['php', '-S', '127.0.0.1:8000/website'], stdout = log, stderr = log)
 
@@ -112,7 +125,10 @@ def rnd():
 		Month = random.randint(1,12)
 		Year = random.randint(1995,2019)
 		master(i)
-		input(G + '[+]' + C + ' Press Enter to Continue...' + W)
+		#input(G + '[+]' + C + ' Press Enter to Continue...' + W)
+		print(G + '[+]' + C + ' Waiting a few seconds...' + W)
+		sleep(5)
+
 
 def default():
 	global Month, Year
@@ -173,12 +189,26 @@ def img():
 	with open ('website/js/spacepaper.js', 'w') as imgfile:
 		imgfile.write(''' document.write(' ''')
 		for link in arr:
+			# extract filename from url
+			filename = urlparse(link)
+			#print(os.path.basename(filename.path))
 			if 'youtube' in link:
 				imgfile.write('<div class="grid-item">')
 				imgfile.write('<iframe src="{}" width="250" frameborder="0" allow="gyroscope; picture-in-picture" allowfullscreen></iframe></div>'.format(link))
 			else:
 				imgfile.write('<div class="grid-item">')
 				imgfile.write('<img src="{}"></div>'.format(link))
+
+				# if download is enabled save file to local file system
+				if download:
+					print (G + '[+]' + C + ' Downloading image : ' + G + os.path.basename(filename.path) + W)
+					with open(download_dir + os.path.sep + os.path.basename(filename.path), 'wb') as f:
+						# download image
+						d = requests.get(link)
+						f.write(d.content)
+
+
+
 		imgfile.write(''' ') ''')
 		arr = []
 try:
