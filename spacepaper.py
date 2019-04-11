@@ -31,7 +31,7 @@ sv = ''
 url = ''
 arr = []
 threads = []
-version = '1.0.1'
+version = '1.0.2'
 
 
 os.system('clear')
